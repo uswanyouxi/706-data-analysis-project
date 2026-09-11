@@ -54,7 +54,7 @@ The dataset includes **4,898 white wines** and **1,599 red wines**. Quality scor
 │   ├── grouped_by_type_quality.csv
 │   └── linear_regression_coefficients.csv
 └── notebooks/
-    └── <modified Rust ownership notebook>.ipynb
+    └── rust_vs_python_intro.ipynb
 ```
 
 ## Setup
@@ -267,14 +267,16 @@ This is an introductory exploratory project, so several limitations remain:
 
 ## Rust Ownership Experiment
 
-The second part of the assignment requires running and modifying the course-provided Rust Jupyter notebook.
-
-The modified notebook will be placed in the `notebooks` folder and will include experiments with Rust ownership concepts such as:
+The modified Rust Jupyter notebook is included in the `notebooks` folder.
+It was run using the Rust kernel and includes experiments with:
 
 - ownership moves
 - borrowing
-- mutable borrowing
+- mutability
 - cloning
+
+The notebook also includes intentional compiler errors to demonstrate
+Rust's ownership and immutability rules, along with my own ownership experiment.
 
 ## Author
 
