@@ -1,0 +1,52 @@
+IDS 706 Data Analysis Summary
+================================================
+
+Dataset Inspection
+Rows: 6497
+Columns: 13
+Missing values total: 0
+Duplicate rows: 1177
+Observed quality range: 3 to 9
+Most common quality score: 6
+Mean alcohol content: 10.492
+
+Wine Type Counts
+type
+red      1599
+white    4898
+
+Filtering
+High-quality wines (quality >= 7): 1277
+High-quality share of dataset: 19.66%
+High-quality wines by type:
+type
+red       217
+white    1060
+
+Grouped Summary by Wine Type
+ type  count  mean_quality  mean_alcohol  mean_volatile_acidity  mean_sulphates
+  red   1599         5.636        10.423                  0.528           0.658
+white   4898         5.878        10.514                  0.278           0.490
+
+Grouped Summary by Quality
+ quality  count  mean_alcohol  mean_volatile_acidity  mean_sulphates
+       3     30        10.215                  0.517           0.506
+       4    216        10.180                  0.458           0.506
+       5   2138         9.838                  0.390           0.526
+       6   2836        10.588                  0.314           0.533
+       7   1079        11.386                  0.289           0.547
+       8    193        11.679                  0.291           0.512
+       9      5        12.180                  0.298           0.466
+
+Machine Learning
+Linear Regression MAE: 0.5644
+Linear Regression R^2: 0.2672
+Baseline MAE: 0.6691
+
+Performance Comparison
+Pandas elapsed time: 0.320271 seconds
+Polars elapsed time: 0.221861 seconds
+
+Visualization Files
+- quality_distribution_by_type.png
+- alcohol_by_quality.png
