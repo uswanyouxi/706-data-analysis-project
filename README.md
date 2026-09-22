@@ -58,6 +58,9 @@ The dataset includes **4,898 white wines** and **1,599 red wines**. Quality scor
 │       └── tests.yml
 ├── data/
 │   └── wine_quality_merged.csv
+├── docs/
+│   ├── local-tests-passed.png
+│   └── github-actions-tests-passed.png
 ├── notebooks/
 │   └── rust_vs_python_intro.ipynb
 ├── outputs/
@@ -326,6 +329,20 @@ The CI workflow:
 4. runs the complete test suite with `python -m pytest -v`
 
 The workflow has already completed successfully on GitHub Actions, confirming that the test suite also passes in a clean Linux environment.
+
+## Test and CI Evidence
+
+### Local Test Results
+
+All six automated tests pass successfully in the local development environment.
+
+![Local pytest results](docs/local-tests-passed.png)
+
+### GitHub Actions CI Results
+
+The same six tests also pass successfully in the GitHub Actions Linux environment.
+
+![GitHub Actions test results](docs/github-actions-tests-passed.png)
 
 ## Rust Ownership Experiment
 
