@@ -1,10 +1,24 @@
-# IDS 706 Week 2 Data Analysis Project
+# IDS 706 Data Analysis Project
+
+[![Tests](https://github.com/uswanyouxi/706-data-analysis-project/actions/workflows/tests.yml/badge.svg)](https://github.com/uswanyouxi/706-data-analysis-project/actions/workflows/tests.yml)
+
+> **Refactoring Motto:** “Make it work, then make it better.”
+
+## Project Motivation
+
+The goal of this project is to explore a real-world wine quality dataset using reproducible data analysis practices. The project combines data inspection, transformation, visualization, performance comparison, and introductory machine learning.
+
+In this phase, the project is extended with automated testing and continuous integration to make the analysis more reliable and reproducible.
+
+## Project Goal
+
+The project aims to identify characteristics associated with wine quality, compare patterns between red and white wines, and build a simple regression model for quality prediction. It also aims to ensure that the main analysis workflow can be automatically tested and reproduced.
 
 ## Project Question
 
 **What characteristics are associated with higher wine quality, and do red and white wines show different patterns?**
 
-This project uses a merged red-and-white wine quality dataset to practice data import, inspection, filtering, grouping, visualization, Polars, and introductory machine learning.
+This project uses a merged red-and-white wine quality dataset to practice data import, inspection, filtering, grouping, visualization, Polars, introductory machine learning, automated testing, and continuous integration.
 
 ## Dataset
 
@@ -39,12 +53,13 @@ The dataset includes **4,898 white wines** and **1,599 red wines**. Quality scor
 
 ```text
 706-data-analysis-project/
-├── analysis.py
-├── README.md
-├── requirements.txt
-├── .gitignore
+├── .github/
+│   └── workflows/
+│       └── tests.yml
 ├── data/
 │   └── wine_quality_merged.csv
+├── notebooks/
+│   └── rust_vs_python_intro.ipynb
 ├── outputs/
 │   ├── summary.txt
 │   ├── quality_distribution_by_type.png
@@ -53,8 +68,14 @@ The dataset includes **4,898 white wines** and **1,599 red wines**. Quality scor
 │   ├── grouped_by_quality.csv
 │   ├── grouped_by_type_quality.csv
 │   └── linear_regression_coefficients.csv
-└── notebooks/
-    └── rust_vs_python_intro.ipynb
+├── tests/
+│   ├── test_analysis.py
+│   └── test_integration.py
+├── analysis.py
+├── pytest.ini
+├── README.md
+├── requirements.txt
+└── .gitignore
 ```
 
 ## Setup
@@ -83,6 +104,12 @@ Run the project:
 
 ```powershell
 python analysis.py
+```
+
+Run the automated tests:
+
+```powershell
+python -m pytest -v
 ```
 
 ## Data Inspection
@@ -167,19 +194,13 @@ The project creates two visualizations.
 
 ![Wine Quality Distribution by Type](outputs/quality_distribution_by_type.png)
 
-This plot compares the number of red and white wines across quality scores.
-Most wines are concentrated around quality scores 5 and 6. Because the dataset
-contains many more white wines than red wines, the raw bar heights should not
-be interpreted as a direct comparison of which wine type is better.
+This plot compares the number of red and white wines across quality scores. Most wines are concentrated around quality scores 5 and 6. Because the dataset contains many more white wines than red wines, the raw bar heights should not be interpreted as a direct comparison of which wine type is better.
 
 ### 2. Alcohol Content by Wine Quality Score
 
 ![Alcohol Content by Wine Quality Score](outputs/alcohol_by_quality.png)
 
-This boxplot shows how alcohol content varies across wine quality scores.
-Alcohol content generally increases as quality increases, especially from
-quality 5 through quality 8. This supports the grouped analysis, although the
-extreme quality groups contain relatively few observations.
+This boxplot shows how alcohol content varies across wine quality scores. Alcohol content generally increases as quality increases, especially from quality 5 through quality 8. This supports the grouped analysis, although the extreme quality groups contain relatively few observations.
 
 ## Machine Learning Exploration
 
@@ -234,11 +255,11 @@ Because the features are measured on different scales, coefficient magnitudes sh
 
 The analysis repeats a similar read, filter, and group workflow in both Pandas and Polars.
 
-Timing over 50 repeated runs on this computer:
+Timing over 50 repeated runs in the latest local execution:
 
-- Pandas: **0.320271 seconds**
-- Polars: **0.221861 seconds**
-- Polars was approximately **1.44× faster** in this run
+- Pandas: **0.290174 seconds**
+- Polars: **0.202568 seconds**
+- Polars was approximately **1.43× faster** in this run
 
 This dataset is relatively small, so the exact timing can vary across computers and runs. The result should be interpreted as a small empirical comparison rather than a universal claim that one library is always faster.
 
@@ -265,18 +286,61 @@ This is an introductory exploratory project, so several limitations remain:
 - Linear Regression assumes linear relationships and may miss more complex patterns.
 - The current model is exploratory rather than optimized for production use.
 
+## Testing
+
+The project includes automated tests using `pytest`.
+
+The current test suite contains **6 tests**:
+
+- **5 unit tests** covering data loading, input validation, filtering/grouping, and machine learning
+- **1 integration test** covering the complete end-to-end analysis workflow
+
+The tests include important edge cases such as:
+
+- attempting to load a missing data file
+- loading a dataset with a missing required column
+
+Run all tests locally with:
+
+```powershell
+python -m pytest -v
+```
+
+All 6 tests currently pass successfully.
+
+## Continuous Integration
+
+GitHub Actions is configured in:
+
+```text
+.github/workflows/tests.yml
+```
+
+The workflow automatically runs whenever code is pushed to the repository or a pull request is created.
+
+The CI workflow:
+
+1. checks out the repository
+2. sets up Python 3.11
+3. installs the dependencies from `requirements.txt`
+4. runs the complete test suite with `python -m pytest -v`
+
+The workflow has already completed successfully on GitHub Actions, confirming that the test suite also passes in a clean Linux environment.
+
 ## Rust Ownership Experiment
 
-The modified Rust Jupyter notebook is included in the `notebooks` folder.
-It was run using the Rust kernel and includes experiments with:
+The modified Rust Jupyter notebook is included in the `notebooks` folder. It was run using the Rust kernel and includes experiments with:
 
 - ownership moves
 - borrowing
 - mutability
 - cloning
 
-The notebook also includes intentional compiler errors to demonstrate
-Rust's ownership and immutability rules, along with my own ownership experiment.
+The notebook also includes intentional compiler errors to demonstrate Rust's ownership and immutability rules, along with my own ownership experiment.
+
+## Repository
+
+GitHub repository: https://github.com/uswanyouxi/706-data-analysis-project
 
 ## Author
 
