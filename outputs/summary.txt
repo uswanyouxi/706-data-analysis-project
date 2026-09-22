@@ -44,8 +44,8 @@ Linear Regression R^2: 0.2672
 Baseline MAE: 0.6691
 
 Performance Comparison
-Pandas elapsed time: 0.320271 seconds
-Polars elapsed time: 0.221861 seconds
+Pandas elapsed time: 0.290174 seconds
+Polars elapsed time: 0.202568 seconds
 
 Visualization Files
 - quality_distribution_by_type.png
