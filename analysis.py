@@ -38,6 +38,13 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 HIGH_QUALITY_THRESHOLD = 7
 BENCHMARK_REPEATS = 50
+OUTLIER_COLUMNS = [
+    "alcohol",
+    "volatile acidity",
+    "residual sugar",
+    "chlorides",
+    "sulphates",
+]
 
 REQUIRED_COLUMNS = {
     "fixed acidity",
@@ -138,6 +145,61 @@ def inspect_data(df: pd.DataFrame) -> None:
 
     print("\nQuality score counts:")
     print(df["quality"].value_counts().sort_index())
+
+
+def summarize_iqr_outliers(
+    df: pd.DataFrame,
+    columns: list[str] = OUTLIER_COLUMNS,
+) -> pd.DataFrame:
+    """Summarize potential outliers using the 1.5 * IQR rule."""
+    rows = []
+
+    for column in columns:
+        q1 = float(df[column].quantile(0.25))
+        q3 = float(df[column].quantile(0.75))
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        outlier_count = int(
+            ((df[column] < lower_bound) | (df[column] > upper_bound)).sum()
+        )
+
+        rows.append(
+            {
+                "feature": column,
+                "lower_bound": lower_bound,
+                "upper_bound": upper_bound,
+                "outlier_count": outlier_count,
+                "outlier_share_pct": outlier_count / len(df) * 100,
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def inspect_data_quality(df: pd.DataFrame) -> pd.DataFrame:
+    """Document missing values, duplicates, and potential numeric outliers."""
+    outlier_summary = summarize_iqr_outliers(df)
+
+    print("\nData-quality decisions:")
+    print("- Missing values: none were found in the dataset.")
+    print(
+        "- Potential outliers are flagged with the 1.5*IQR rule for selected "
+        "numeric features."
+    )
+    print(
+        "- Outliers are retained because unusual chemical measurements may be "
+        "valid wines rather than data-entry errors."
+    )
+    print(
+        "- Duplicate rows are reported but retained to avoid changing the source data."
+    )
+
+    print("\nIQR outlier summary:")
+    print(outlier_summary.round(3).to_string(index=False))
+
+    save_dataframe(outlier_summary, "outlier_summary.csv")
+    return outlier_summary
 
 
 # ---------------------------------------------------------------------------
@@ -515,6 +577,7 @@ def save_summary(
     high_quality: pd.DataFrame,
     grouped_by_type: pd.DataFrame,
     grouped_by_quality: pd.DataFrame,
+    outlier_summary: pd.DataFrame,
     ml_results: dict,
     pandas_seconds: float,
     polars_seconds: float,
@@ -541,6 +604,12 @@ def save_summary(
         f"Observed quality range: {quality_min} to {quality_max}",
         f"Most common quality score: {most_common_quality}",
         f"Mean alcohol content: {mean_alcohol:.3f}",
+        "",
+        "Data Quality Treatment",
+        "Missing values: none found",
+        "Potential outliers were identified with the 1.5*IQR rule and retained.",
+        "Outlier summary:",
+        outlier_summary.round(3).to_string(index=False),
         "",
         "Wine Type Counts",
         type_counts.to_string(),
@@ -587,6 +656,7 @@ def print_completion_message() -> None:
     print("- grouped_by_type.csv")
     print("- grouped_by_quality.csv")
     print("- grouped_by_type_quality.csv")
+    print("- outlier_summary.csv")
     print("- linear_regression_coefficients.csv")
     print("\nUse summary.txt and the plots to finalize the README findings.")
 
@@ -601,6 +671,7 @@ def main() -> None:
     df = load_with_pandas()
 
     inspect_data(df)
+    outlier_summary = inspect_data_quality(df)
 
     (
         high_quality,
@@ -620,6 +691,7 @@ def main() -> None:
         high_quality=high_quality,
         grouped_by_type=grouped_by_type,
         grouped_by_quality=grouped_by_quality,
+        outlier_summary=outlier_summary,
         ml_results=ml_results,
         pandas_seconds=pandas_seconds,
         polars_seconds=polars_seconds,

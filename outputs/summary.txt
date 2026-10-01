@@ -10,6 +10,17 @@ Observed quality range: 3 to 9
 Most common quality score: 6
 Mean alcohol content: 10.492
 
+Data Quality Treatment
+Missing values: none found
+Potential outliers were identified with the 1.5*IQR rule and retained.
+Outlier summary:
+         feature  lower_bound  upper_bound  outlier_count  outlier_share_pct
+         alcohol        6.800       14.000              3              0.046
+volatile acidity       -0.025        0.655            377              5.803
+  residual sugar       -7.650       17.550            118              1.816
+       chlorides       -0.003        0.106            286              4.402
+       sulphates        0.175        0.855            191              2.940
+
 Wine Type Counts
 type
 red      1599
@@ -44,8 +55,8 @@ Linear Regression R^2: 0.2672
 Baseline MAE: 0.6691
 
 Performance Comparison
-Pandas elapsed time: 0.290174 seconds
-Polars elapsed time: 0.202568 seconds
+Pandas elapsed time: 0.373493 seconds
+Polars elapsed time: 0.198518 seconds
 
 Visualization Files
 - quality_distribution_by_type.png
