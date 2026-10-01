@@ -1,5 +1,6 @@
 """
-IDS 706 - Week 2 Data Analysis Project
+IDS 706 - Data Analysis Project
+
 Dataset: Red and White Wine Quality (merged)
 
 Project question:
@@ -28,12 +29,15 @@ from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 
 # ---------------------------------------------------------------------------
-# Project paths
+# Project configuration
 # ---------------------------------------------------------------------------
 
 DATA_PATH = Path("data/wine_quality_merged.csv")
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+HIGH_QUALITY_THRESHOLD = 7
+BENCHMARK_REPEATS = 50
 
 REQUIRED_COLUMNS = {
     "fixed acidity",
@@ -53,20 +57,19 @@ REQUIRED_COLUMNS = {
 
 
 # ---------------------------------------------------------------------------
-# 1. Import the dataset
+# Shared helpers
 # ---------------------------------------------------------------------------
 
 
-def load_with_pandas() -> pd.DataFrame:
-    """Load the comma-separated merged wine-quality dataset with Pandas."""
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(
-            f"Dataset not found at {DATA_PATH}. "
-            "Place wine_quality_merged.csv inside the data folder."
-        )
+def print_section(title: str) -> None:
+    """Print a consistent section heading."""
+    print("\n" + "=" * 72)
+    print(title)
+    print("=" * 72)
 
-    df = pd.read_csv(DATA_PATH)
 
+def validate_required_columns(df: pd.DataFrame) -> None:
+    """Raise a clear error if expected columns are missing."""
     missing_columns = REQUIRED_COLUMNS.difference(df.columns)
     if missing_columns:
         raise ValueError(
@@ -74,6 +77,29 @@ def load_with_pandas() -> pd.DataFrame:
             + ", ".join(sorted(missing_columns))
         )
 
+
+def save_dataframe(df: pd.DataFrame, filename: str) -> Path:
+    """Save a DataFrame in the outputs directory and return its path."""
+    path = OUTPUT_DIR / filename
+    df.to_csv(path, index=False)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# 1. Import the dataset
+# ---------------------------------------------------------------------------
+
+
+def load_with_pandas() -> pd.DataFrame:
+    """Load the merged wine-quality dataset with Pandas."""
+    if not DATA_PATH.exists():
+        raise FileNotFoundError(
+            f"Dataset not found at {DATA_PATH}. "
+            "Place wine_quality_merged.csv inside the data folder."
+        )
+
+    df = pd.read_csv(DATA_PATH)
+    validate_required_columns(df)
     return df
 
 
@@ -84,9 +110,7 @@ def load_with_pandas() -> pd.DataFrame:
 
 def inspect_data(df: pd.DataFrame) -> None:
     """Print the main inspection results required by the assignment."""
-    print("\n" + "=" * 72)
-    print("1. DATA INSPECTION")
-    print("=" * 72)
+    print_section("1. DATA INSPECTION")
 
     print("\nFirst five rows:")
     print(df.head())
@@ -121,29 +145,14 @@ def inspect_data(df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 
 
-def filter_and_group_pandas(
-    df: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """
-    Create a meaningful high-quality subset and grouped summaries.
+def get_high_quality_wines(df: pd.DataFrame) -> pd.DataFrame:
+    """Return wines whose quality score meets the project threshold."""
+    return df[df["quality"] >= HIGH_QUALITY_THRESHOLD].copy()
 
-    High-quality wine is defined here as quality >= 7.
-    """
-    print("\n" + "=" * 72)
-    print("2. FILTERING AND GROUPING WITH PANDAS")
-    print("=" * 72)
 
-    # Filter: keep wines with quality score 7 or higher.
-    high_quality = df[df["quality"] >= 7].copy()
-
-    print(f"\nWines with quality >= 7: {len(high_quality)}")
-    print(high_quality.head())
-
-    print("\nHigh-quality wines by type:")
-    print(high_quality["type"].value_counts())
-
-    # Group 1: compare red and white wines overall.
-    grouped_by_type = (
+def group_by_type(df: pd.DataFrame) -> pd.DataFrame:
+    """Summarize overall differences between red and white wines."""
+    return (
         df.groupby("type")
         .agg(
             count=("quality", "size"),
@@ -156,11 +165,10 @@ def filter_and_group_pandas(
         .sort_values("type")
     )
 
-    print("\nGrouped summary by wine type:")
-    print(grouped_by_type.round(3))
 
-    # Group 2: examine how selected measurements change with quality score.
-    grouped_by_quality = (
+def group_by_quality(df: pd.DataFrame) -> pd.DataFrame:
+    """Summarize selected measurements across quality levels."""
+    return (
         df.groupby("quality")
         .agg(
             count=("quality", "size"),
@@ -172,11 +180,10 @@ def filter_and_group_pandas(
         .sort_values("quality")
     )
 
-    print("\nGrouped summary by quality:")
-    print(grouped_by_quality.round(3))
 
-    # Group 3: compare red and white wines within each quality level.
-    grouped_by_type_quality = (
+def group_by_type_and_quality(df: pd.DataFrame) -> pd.DataFrame:
+    """Compare red and white wines within each quality level."""
+    return (
         df.groupby(["type", "quality"])
         .agg(
             count=("quality", "size"),
@@ -186,23 +193,47 @@ def filter_and_group_pandas(
         .sort_values(["type", "quality"])
     )
 
+
+def save_grouped_tables(
+    grouped_by_type: pd.DataFrame,
+    grouped_by_quality: pd.DataFrame,
+    grouped_by_type_quality: pd.DataFrame,
+) -> None:
+    """Save grouped analysis tables for later inspection."""
+    save_dataframe(grouped_by_type, "grouped_by_type.csv")
+    save_dataframe(grouped_by_quality, "grouped_by_quality.csv")
+    save_dataframe(grouped_by_type_quality, "grouped_by_type_quality.csv")
+
+
+def filter_and_group_pandas(
+    df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Create the filtered subset and grouped Pandas summaries."""
+    print_section("2. FILTERING AND GROUPING WITH PANDAS")
+
+    high_quality = get_high_quality_wines(df)
+    grouped_type = group_by_type(df)
+    grouped_quality = group_by_quality(df)
+    grouped_type_quality = group_by_type_and_quality(df)
+
+    print(f"\nWines with quality >= {HIGH_QUALITY_THRESHOLD}: {len(high_quality)}")
+    print(high_quality.head())
+
+    print("\nHigh-quality wines by type:")
+    print(high_quality["type"].value_counts())
+
+    print("\nGrouped summary by wine type:")
+    print(grouped_type.round(3))
+
+    print("\nGrouped summary by quality:")
+    print(grouped_quality.round(3))
+
     print("\nGrouped summary by wine type and quality:")
-    print(grouped_by_type_quality.round(3))
+    print(grouped_type_quality.round(3))
 
-    # Save grouped tables so the analysis is easy to inspect later.
-    grouped_by_type.to_csv(OUTPUT_DIR / "grouped_by_type.csv", index=False)
-    grouped_by_quality.to_csv(OUTPUT_DIR / "grouped_by_quality.csv", index=False)
-    grouped_by_type_quality.to_csv(
-        OUTPUT_DIR / "grouped_by_type_quality.csv",
-        index=False,
-    )
+    save_grouped_tables(grouped_type, grouped_quality, grouped_type_quality)
 
-    return (
-        high_quality,
-        grouped_by_type,
-        grouped_by_quality,
-        grouped_by_type_quality,
-    )
+    return high_quality, grouped_type, grouped_quality, grouped_type_quality
 
 
 # ---------------------------------------------------------------------------
@@ -210,27 +241,21 @@ def filter_and_group_pandas(
 # ---------------------------------------------------------------------------
 
 
-def create_visualizations(df: pd.DataFrame) -> None:
-    """Create and save two clear plots related to the project question."""
-    print("\n" + "=" * 72)
-    print("3. VISUALIZATION")
-    print("=" * 72)
-
-    # Plot 1:
-    # Compare the distribution of quality scores for red and white wines.
+def plot_quality_distribution_by_type(df: pd.DataFrame) -> Path:
+    """Create a bar chart of quality-score counts by wine type."""
     quality_type_counts = (
         df.groupby(["quality", "type"]).size().unstack(fill_value=0).sort_index()
     )
 
     qualities = quality_type_counts.index.to_numpy()
-    types = list(quality_type_counts.columns)
+    wine_types = list(quality_type_counts.columns)
     x = np.arange(len(qualities))
-    width = 0.8 / len(types)
+    width = 0.8 / len(wine_types)
 
     plt.figure(figsize=(9, 5))
 
-    for i, wine_type in enumerate(types):
-        offset = (i - (len(types) - 1) / 2) * width
+    for i, wine_type in enumerate(wine_types):
+        offset = (i - (len(wine_types) - 1) / 2) * width
         plt.bar(
             x + offset,
             quality_type_counts[wine_type].to_numpy(),
@@ -245,12 +270,14 @@ def create_visualizations(df: pd.DataFrame) -> None:
     plt.legend(title="Wine Type")
     plt.tight_layout()
 
-    path1 = OUTPUT_DIR / "quality_distribution_by_type.png"
-    plt.savefig(path1, dpi=150)
+    path = OUTPUT_DIR / "quality_distribution_by_type.png"
+    plt.savefig(path, dpi=150)
     plt.close()
+    return path
 
-    # Plot 2:
-    # Compare alcohol distributions across quality scores.
+
+def plot_alcohol_by_quality(df: pd.DataFrame) -> Path:
+    """Create a box plot of alcohol content across quality levels."""
     qualities = sorted(df["quality"].unique())
     alcohol_groups = [
         df.loc[df["quality"] == quality, "alcohol"].to_numpy() for quality in qualities
@@ -266,9 +293,18 @@ def create_visualizations(df: pd.DataFrame) -> None:
     plt.ylabel("Alcohol (%)")
     plt.tight_layout()
 
-    path2 = OUTPUT_DIR / "alcohol_by_quality.png"
-    plt.savefig(path2, dpi=150)
+    path = OUTPUT_DIR / "alcohol_by_quality.png"
+    plt.savefig(path, dpi=150)
     plt.close()
+    return path
+
+
+def create_visualizations(df: pd.DataFrame) -> None:
+    """Create and save the project visualizations."""
+    print_section("3. VISUALIZATION")
+
+    path1 = plot_quality_distribution_by_type(df)
+    path2 = plot_alcohol_by_quality(df)
 
     print(f"Saved: {path1}")
     print(f"Saved: {path2}")
@@ -285,19 +321,66 @@ def create_visualizations(df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 
 
+def run_pandas_benchmark(repeats: int = BENCHMARK_REPEATS) -> float:
+    """Time a small Pandas read/filter/group workflow."""
+    start = perf_counter()
+
+    for _ in range(repeats):
+        pd_temp = pd.read_csv(DATA_PATH)
+        (
+            pd_temp[pd_temp["quality"] >= HIGH_QUALITY_THRESHOLD]
+            .groupby(["type", "quality"])["alcohol"]
+            .mean()
+        )
+
+    return perf_counter() - start
+
+
+def run_polars_benchmark(repeats: int = BENCHMARK_REPEATS) -> float:
+    """Time the equivalent Polars read/filter/group workflow."""
+    start = perf_counter()
+
+    for _ in range(repeats):
+        pl_temp = pl.read_csv(DATA_PATH)
+        (
+            pl_temp.filter(pl.col("quality") >= HIGH_QUALITY_THRESHOLD)
+            .group_by(["type", "quality"])
+            .agg(pl.col("alcohol").mean().alias("mean_alcohol"))
+        )
+
+    return perf_counter() - start
+
+
+def print_benchmark_result(
+    pandas_seconds: float,
+    polars_seconds: float,
+    repeats: int,
+) -> None:
+    """Print the benchmark comparison in a consistent format."""
+    print(f"\nTiming over {repeats} read/filter/group runs:")
+    print(f"Pandas: {pandas_seconds:.6f} seconds")
+    print(f"Polars: {polars_seconds:.6f} seconds")
+
+    if pandas_seconds > 0 and polars_seconds > 0:
+        ratio = pandas_seconds / polars_seconds
+        if ratio > 1:
+            print(f"Polars was about {ratio:.2f}x faster in this run.")
+        else:
+            print(f"Pandas was about {1 / ratio:.2f}x faster in this run.")
+
+    print(
+        "Note: This dataset is relatively small, so timing results can vary "
+        "between computers and runs. The comparison demonstrates equivalent "
+        "Pandas and Polars workflows."
+    )
+
+
 def polars_analysis_and_timing() -> tuple[pl.DataFrame, float, float]:
-    """
-    Repeat key filter/group operations in Polars and compare a small workflow
-    with Pandas.
-    """
-    print("\n" + "=" * 72)
-    print("4. POLARS ANALYSIS AND PANDAS VS POLARS PERFORMANCE")
-    print("=" * 72)
+    """Repeat key analysis in Polars and compare simple workflow timing."""
+    print_section("4. POLARS ANALYSIS AND PANDAS VS POLARS PERFORMANCE")
 
-    # Correctly assign the loaded Polars DataFrame.
     pl_df = pl.read_csv(DATA_PATH)
-
-    pl_high_quality = pl_df.filter(pl.col("quality") >= 7)
+    pl_high_quality = pl_df.filter(pl.col("quality") >= HIGH_QUALITY_THRESHOLD)
 
     pl_grouped = (
         pl_df.group_by(["type", "quality"])
@@ -316,46 +399,13 @@ def polars_analysis_and_timing() -> tuple[pl.DataFrame, float, float]:
     print("\nPolars grouped summary by type and quality:")
     print(pl_grouped)
 
-    # Time the same read -> filter -> group workflow in both libraries.
-    # The dataset is small, so results may vary from run to run.
-    repeats = 50
+    pandas_seconds = run_pandas_benchmark()
+    polars_seconds = run_polars_benchmark()
 
-    pandas_start = perf_counter()
-    for _ in range(repeats):
-        pd_temp = pd.read_csv(DATA_PATH)
-        (
-            pd_temp[pd_temp["quality"] >= 7]
-            .groupby(["type", "quality"])["alcohol"]
-            .mean()
-        )
-    pandas_seconds = perf_counter() - pandas_start
-
-    polars_start = perf_counter()
-    for _ in range(repeats):
-        pl_temp = pl.read_csv(DATA_PATH)
-        (
-            pl_temp.filter(pl.col("quality") >= 7)
-            .group_by(["type", "quality"])
-            .agg(pl.col("alcohol").mean().alias("mean_alcohol"))
-        )
-    polars_seconds = perf_counter() - polars_start
-
-    print(f"\nTiming over {repeats} read/filter/group runs:")
-    print(f"Pandas: {pandas_seconds:.6f} seconds")
-    print(f"Polars: {polars_seconds:.6f} seconds")
-
-    if pandas_seconds > 0 and polars_seconds > 0:
-        ratio = pandas_seconds / polars_seconds
-
-        if ratio > 1:
-            print(f"Polars was about {ratio:.2f}x faster in this run.")
-        else:
-            print(f"Pandas was about {1 / ratio:.2f}x faster in this run.")
-
-    print(
-        "Note: This dataset is relatively small, so timing results can vary "
-        "between computers and runs. The comparison demonstrates equivalent "
-        "Pandas and Polars workflows."
+    print_benchmark_result(
+        pandas_seconds=pandas_seconds,
+        polars_seconds=polars_seconds,
+        repeats=BENCHMARK_REPEATS,
     )
 
     return pl_grouped, pandas_seconds, polars_seconds
@@ -366,29 +416,43 @@ def polars_analysis_and_timing() -> tuple[pl.DataFrame, float, float]:
 # ---------------------------------------------------------------------------
 
 
-def machine_learning_exploration(df: pd.DataFrame) -> dict:
-    """
-    Train a beginner-friendly Linear Regression model to predict wine quality.
-
-    The merged dataset includes the categorical column 'type'. Machine-learning
-    models such as LinearRegression require numeric inputs, so Pandas
-    get_dummies() converts wine type into a numeric indicator variable.
-    """
-    print("\n" + "=" * 72)
-    print("5. MACHINE LEARNING EXPLORATION")
-    print("=" * 72)
-
-    # Target/output.
+def prepare_model_data(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+    """Create numeric model features and the target variable."""
     y = df["quality"]
 
-    # Inputs/features.
-    # Convert the categorical 'type' variable into a numeric dummy variable.
     X = pd.get_dummies(
         df.drop(columns=["quality"]),
         columns=["type"],
         drop_first=True,
         dtype=int,
     )
+
+    return X, y
+
+
+def build_coefficient_table(
+    feature_names: pd.Index,
+    coefficients: np.ndarray,
+) -> pd.DataFrame:
+    """Create a coefficient table ordered by absolute coefficient size."""
+    return (
+        pd.DataFrame(
+            {
+                "feature": feature_names,
+                "coefficient": coefficients,
+                "abs_coefficient": np.abs(coefficients),
+            }
+        )
+        .sort_values("abs_coefficient", ascending=False)
+        .drop(columns="abs_coefficient")
+    )
+
+
+def machine_learning_exploration(df: pd.DataFrame) -> dict:
+    """Train a simple Linear Regression model to predict wine quality."""
+    print_section("5. MACHINE LEARNING EXPLORATION")
+
+    X, y = prepare_model_data(df)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -401,12 +465,9 @@ def machine_learning_exploration(df: pd.DataFrame) -> dict:
     model.fit(X_train, y_train)
 
     predictions = model.predict(X_test)
-
     mae = mean_absolute_error(y_test, predictions)
     r2 = r2_score(y_test, predictions)
 
-    # Baseline:
-    # predict the training-set mean quality for every test observation.
     baseline_predictions = np.full(len(y_test), y_train.mean())
     baseline_mae = mean_absolute_error(y_test, baseline_predictions)
 
@@ -425,24 +486,14 @@ def machine_learning_exploration(df: pd.DataFrame) -> dict:
             "The Linear Regression model does not beat the simple mean baseline on MAE."
         )
 
-    coefficient_table = (
-        pd.DataFrame(
-            {
-                "feature": X.columns,
-                "coefficient": model.coef_,
-                "abs_coefficient": np.abs(model.coef_),
-            }
-        )
-        .sort_values("abs_coefficient", ascending=False)
-        .drop(columns="abs_coefficient")
-    )
+    coefficient_table = build_coefficient_table(X.columns, model.coef_)
 
     print("\nLinear regression coefficients:")
     print(coefficient_table.round(4).to_string(index=False))
 
-    coefficient_table.to_csv(
-        OUTPUT_DIR / "linear_regression_coefficients.csv",
-        index=False,
+    save_dataframe(
+        coefficient_table,
+        "linear_regression_coefficients.csv",
     )
 
     return {
@@ -476,7 +527,6 @@ def save_summary(
 
     type_counts = df["type"].value_counts().sort_index()
     high_quality_type_counts = high_quality["type"].value_counts().sort_index()
-
     high_quality_rate = len(high_quality) / len(df) * 100
 
     lines = [
@@ -496,7 +546,7 @@ def save_summary(
         type_counts.to_string(),
         "",
         "Filtering",
-        f"High-quality wines (quality >= 7): {len(high_quality)}",
+        f"High-quality wines (quality >= {HIGH_QUALITY_THRESHOLD}): {len(high_quality)}",
         f"High-quality share of dataset: {high_quality_rate:.2f}%",
         "High-quality wines by type:",
         high_quality_type_counts.to_string(),
@@ -527,12 +577,27 @@ def save_summary(
     print(f"\nSaved summary for README: {summary_path}")
 
 
+def print_completion_message() -> None:
+    """Print the expected project completion message and output files."""
+    print_section("PROJECT RUN COMPLETED SUCCESSFULLY")
+    print("Check the outputs folder for:")
+    print("- summary.txt")
+    print("- quality_distribution_by_type.png")
+    print("- alcohol_by_quality.png")
+    print("- grouped_by_type.csv")
+    print("- grouped_by_quality.csv")
+    print("- grouped_by_type_quality.csv")
+    print("- linear_regression_coefficients.csv")
+    print("\nUse summary.txt and the plots to finalize the README findings.")
+
+
 # ---------------------------------------------------------------------------
 # Main program
 # ---------------------------------------------------------------------------
 
 
 def main() -> None:
+    """Run the complete data-analysis workflow."""
     df = load_with_pandas()
 
     inspect_data(df)
@@ -560,18 +625,7 @@ def main() -> None:
         polars_seconds=polars_seconds,
     )
 
-    print("\n" + "=" * 72)
-    print("PROJECT RUN COMPLETED SUCCESSFULLY")
-    print("=" * 72)
-    print("Check the outputs folder for:")
-    print("- summary.txt")
-    print("- quality_distribution_by_type.png")
-    print("- alcohol_by_quality.png")
-    print("- grouped_by_type.csv")
-    print("- grouped_by_quality.csv")
-    print("- grouped_by_type_quality.csv")
-    print("- linear_regression_coefficients.csv")
-    print("\nUse summary.txt and the plots to finalize the README findings.")
+    print_completion_message()
 
 
 if __name__ == "__main__":
