@@ -27,7 +27,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 
-
 # ---------------------------------------------------------------------------
 # Project paths
 # ---------------------------------------------------------------------------
@@ -57,6 +56,7 @@ REQUIRED_COLUMNS = {
 # 1. Import the dataset
 # ---------------------------------------------------------------------------
 
+
 def load_with_pandas() -> pd.DataFrame:
     """Load the comma-separated merged wine-quality dataset with Pandas."""
     if not DATA_PATH.exists():
@@ -80,6 +80,7 @@ def load_with_pandas() -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # 2. Inspect the data
 # ---------------------------------------------------------------------------
+
 
 def inspect_data(df: pd.DataFrame) -> None:
     """Print the main inspection results required by the assignment."""
@@ -118,6 +119,7 @@ def inspect_data(df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 # 3. Filtering and grouping with Pandas
 # ---------------------------------------------------------------------------
+
 
 def filter_and_group_pandas(
     df: pd.DataFrame,
@@ -207,6 +209,7 @@ def filter_and_group_pandas(
 # 4. Visualization
 # ---------------------------------------------------------------------------
 
+
 def create_visualizations(df: pd.DataFrame) -> None:
     """Create and save two clear plots related to the project question."""
     print("\n" + "=" * 72)
@@ -216,10 +219,7 @@ def create_visualizations(df: pd.DataFrame) -> None:
     # Plot 1:
     # Compare the distribution of quality scores for red and white wines.
     quality_type_counts = (
-        df.groupby(["quality", "type"])
-        .size()
-        .unstack(fill_value=0)
-        .sort_index()
+        df.groupby(["quality", "type"]).size().unstack(fill_value=0).sort_index()
     )
 
     qualities = quality_type_counts.index.to_numpy()
@@ -253,8 +253,7 @@ def create_visualizations(df: pd.DataFrame) -> None:
     # Compare alcohol distributions across quality scores.
     qualities = sorted(df["quality"].unique())
     alcohol_groups = [
-        df.loc[df["quality"] == quality, "alcohol"].to_numpy()
-        for quality in qualities
+        df.loc[df["quality"] == quality, "alcohol"].to_numpy() for quality in qualities
     ]
 
     plt.figure(figsize=(9, 5))
@@ -285,6 +284,7 @@ def create_visualizations(df: pd.DataFrame) -> None:
 # 5. Polars analysis and performance comparison
 # ---------------------------------------------------------------------------
 
+
 def polars_analysis_and_timing() -> tuple[pl.DataFrame, float, float]:
     """
     Repeat key filter/group operations in Polars and compare a small workflow
@@ -304,9 +304,7 @@ def polars_analysis_and_timing() -> tuple[pl.DataFrame, float, float]:
         .agg(
             pl.len().alias("count"),
             pl.col("alcohol").mean().alias("mean_alcohol"),
-            pl.col("volatile acidity")
-            .mean()
-            .alias("mean_volatile_acidity"),
+            pl.col("volatile acidity").mean().alias("mean_volatile_acidity"),
             pl.col("sulphates").mean().alias("mean_sulphates"),
         )
         .sort(["type", "quality"])
@@ -367,6 +365,7 @@ def polars_analysis_and_timing() -> tuple[pl.DataFrame, float, float]:
 # 6. Machine learning exploration
 # ---------------------------------------------------------------------------
 
+
 def machine_learning_exploration(df: pd.DataFrame) -> dict:
     """
     Train a beginner-friendly Linear Regression model to predict wine quality.
@@ -422,7 +421,9 @@ def machine_learning_exploration(df: pd.DataFrame) -> dict:
     if mae < baseline_mae:
         print("The Linear Regression model beats the simple mean baseline on MAE.")
     else:
-        print("The Linear Regression model does not beat the simple mean baseline on MAE.")
+        print(
+            "The Linear Regression model does not beat the simple mean baseline on MAE."
+        )
 
     coefficient_table = (
         pd.DataFrame(
@@ -448,14 +449,15 @@ def machine_learning_exploration(df: pd.DataFrame) -> dict:
         "mae": float(mae),
         "r2": float(r2),
         "baseline_mae": float(baseline_mae),
-        "n_train": int(len(X_train)),
-        "n_test": int(len(X_test)),
+        "n_train": len(X_train),
+        "n_test": len(X_test),
     }
 
 
 # ---------------------------------------------------------------------------
 # 7. Save a compact summary for the README
 # ---------------------------------------------------------------------------
+
 
 def save_summary(
     df: pd.DataFrame,
@@ -528,6 +530,7 @@ def save_summary(
 # ---------------------------------------------------------------------------
 # Main program
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     df = load_with_pandas()

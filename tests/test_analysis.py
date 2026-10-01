@@ -84,8 +84,6 @@ def test_filter_and_group_pandas(tmp_path, monkeypatch):
     assert grouped_by_type_quality["count"].sum() == 4
 
 
-
-
 def test_machine_learning_exploration(tmp_path, monkeypatch):
     """Machine-learning workflow should return valid metrics and save coefficients."""
     sample_df = pd.concat(
